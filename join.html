@@ -1,0 +1,159 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Join Queue | QueueRator</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .queue-card {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      padding: 2rem 3rem;
+      box-shadow: 0 0 25px rgba(0,0,0,0.4);
+      width: 90%;
+      max-width: 600px;
+      margin-top: 2rem;
+    }
+    h2 {
+      color: #00eaff;
+      text-shadow: 0 0 10px rgba(0,234,255,0.7);
+    }
+    input {
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      width: 70%;
+      margin-top: 1rem;
+      text-align: center;
+    }
+    button {
+      background: linear-gradient(135deg, #00eaff, #007bff);
+      color: #000;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      transform: scale(1.05);
+      background: linear-gradient(135deg, #00c6ff, #005eff);
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 1rem;
+    }
+    li {
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+      margin: 5px 0;
+      padding: 8px;
+    }
+    .now-serving {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: #00ffcc;
+      margin: 1rem 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="queue-card">
+    <h2>QueueRator</h2>
+
+    <!-- NEW: Display Queue ID -->
+    <p><strong>Queue ID:</strong> <span id="queueIdDisplay">{{ queue_id }}</span></p>
+
+    <!-- Input and Join Button -->
+    <input id="joinName" placeholder="Enter your name">
+    <button id="joinBtn">Join Queue</button>
+
+    <!-- Live Queue Updates -->
+    <p class="now-serving" id="nowServing">Now Serving: -</p>
+    <ul id="queueList"></ul>
+    <p id="yourPosition"></p>
+  </div>
+
+  <script>
+    // Get the queue_id passed from Flask route
+    const qid = "{{ queue_id }}";
+    const joinNameInput = document.getElementById('joinName');
+    const joinBtn = document.getElementById('joinBtn');
+    const queueList = document.getElementById('queueList');
+    const nowServing = document.getElementById('nowServing');
+    const yourPosition = document.getElementById('yourPosition');
+
+    let myName = null;
+
+    // ✅ Function to join queue
+    async function joinQueue() {
+      myName = joinNameInput.value.trim();
+      if (!myName) return alert("Please enter your name before joining.");
+      try {
+        const res = await fetch(`/api/queue/${qid}/join`, {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ name: myName })
+        });
+        const data = await res.json();
+        if (data.error) return alert("Error joining queue: " + data.error);
+        alert(`You have successfully joined Queue ${qid}`);
+      } catch (err) {
+        console.error("Join error:", err);
+      }
+    }
+
+    joinBtn.addEventListener('click', joinQueue);
+
+    // ✅ Function to refresh queue data in real-time
+    async function refreshQueue() {
+      try {
+        const res = await fetch(`/api/queue/${qid}/data`);
+        const data = await res.json();
+        if (data.error) {
+          nowServing.textContent = "Queue not found!";
+          queueList.innerHTML = "";
+          return;
+        }
+
+        const users = data.users || [];
+        queueList.innerHTML = users.map((u, i) => `<li>#${i+1} - ${u}</li>`).join('');
+        nowServing.textContent = users.length ? `Now Serving: ${users[0]}` : "Now Serving: -";
+
+        // Show user’s current position
+        if (myName) {
+          const pos = users.indexOf(myName);
+          yourPosition.textContent =
+            pos >= 0 ? `Your position: #${pos + 1}` : "✅ You’ve been served!";
+        }
+      } catch (err) {
+        console.error("Queue refresh error:", err);
+      }
+    }
+
+    // Poll every 1.5 seconds
+    setInterval(refreshQueue, 1500);
+    refreshQueue();
+  </script>
+</body>
+</html>

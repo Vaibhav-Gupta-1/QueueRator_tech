@@ -1,0 +1,163 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>QueueRator | Manage Queue</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #001f3f, #0074D9);
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+    .panel {
+      background: rgba(255,255,255,0.1);
+      padding: 25px;
+      border-radius: 15px;
+      max-width: 750px;
+      margin: 30px auto;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .queue-id {
+      text-align: center;
+      font-size: 1.2rem;
+      color: #00eaff;
+    }
+    img {
+      display: block;
+      margin: 10px auto;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    input, button {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      margin: 5px;
+    }
+    button {
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    #addBtn { background: #00eaff; color: black; }
+    #nextBtn { background: #00ff9d; color: black; }
+    #clearBtn { background: #ff5c5c; color: white; }
+    #backBtn { background: #666; color: white; }
+
+    button:hover {
+      transform: scale(1.05);
+    }
+
+    .stats {
+      text-align: center;
+      margin-top: 15px;
+    }
+    .stats p {
+      margin: 5px 0;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+    }
+    li {
+      background: rgba(0,0,0,0.4);
+      margin: 5px 0;
+      padding: 8px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>QueueRator | Manage Queue</h1>
+  <div class="panel">
+    <div class="queue-id">Queue ID: <b>{{ queue_id }}</b></div>
+    <img src="/queue/{{ queue_id }}/qr" width="120" alt="QR Code">
+
+    <div style="text-align:center;margin:15px 0;">
+      <input id="addName" placeholder="Enter user name">
+      <button id="addBtn">Add</button>
+      <button id="nextBtn">Call Next</button>
+      <button id="clearBtn">Clear</button>
+    </div>
+
+    <div class="stats">
+      <p>👥 <b>People Waiting:</b> <span id="waitingCount">0</span></p>
+      <p>✅ <b>Last Served:</b> <span id="lastServed">-</span></p>
+      <p>📊 <b>Total Served:</b> <span id="totalServed">0</span></p>
+    </div>
+
+    <h3 style="text-align:center;">Live Queue</h3>
+    <ul id="queueList"></ul>
+
+    <div style="text-align:center;margin-top:15px;">
+      <button id="backBtn" onclick="window.location.href='/admin'">⬅ Back to Dashboard</button>
+    </div>
+  </div>
+
+<script>
+  const queueId = "{{ queue_id }}";
+
+  async function api(path, opts) {
+    const res = await fetch(path, opts);
+    return res.json();
+  }
+
+  async function loadQueue() {
+    const res = await fetch(`/api/queue/${queueId}/data`);
+    const data = await res.json();
+    const list = document.getElementById('queueList');
+    const waitingCount = document.getElementById('waitingCount');
+    if (data.error) {
+      list.innerHTML = `<li>Queue not found</li>`;
+      waitingCount.innerText = "0";
+      return;
+    }
+    waitingCount.innerText = data.users.length;
+    list.innerHTML = data.users.map((u, i) => `<li>#${i + 1} - ${u}</li>`).join('');
+  }
+
+  document.getElementById('addBtn').addEventListener('click', async () => {
+    const name = document.getElementById('addName').value.trim();
+    if (!name) return alert('Enter a name');
+    await api(`/api/queue/${queueId}/add`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ name })
+    });
+    document.getElementById('addName').value = '';
+    loadQueue();
+  });
+
+  document.getElementById('nextBtn').addEventListener('click', async () => {
+    const res = await api(`/api/queue/${queueId}/next`, { method: 'POST' });
+    if (res.removed) {
+      document.getElementById('lastServed').innerText = res.removed;
+      totalServed++;
+      document.getElementById('totalServed').innerText = totalServed;
+    }
+    loadQueue();
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', async () => {
+    if (!confirm('Clear entire queue?')) return;
+    await api(`/api/queue/${queueId}/clear`, { method: 'POST' });
+    loadQueue();
+  });
+
+  let totalServed = 0;
+  setInterval(loadQueue, 2000);
+  loadQueue();
+</script>
+</body>
+</html>

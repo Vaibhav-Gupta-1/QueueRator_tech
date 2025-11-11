@@ -1,0 +1,100 @@
+body {
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+}
+.hero {
+  padding: 100px 20px;
+}
+.hero h1 {
+  font-size: 2.5rem;
+}
+button {
+  background: linear-gradient(90deg, #4facfe, #00f2fe);
+  border: none;
+  padding: 10px 20px;
+  color: white;
+  border-radius: 10px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: 0.3s;
+}
+button:hover {
+  transform: scale(1.05);
+}
+.panel {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  margin: 40px auto;
+  padding: 30px;
+  width: 90%;
+  max-width: 600px;
+}
+.queue-card {
+  display: inline-block;
+  margin: 20px;
+  padding: 20px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 15px;
+}
+.queue-card button {
+  background: #ff5555;
+  border: none;
+  color: white;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: 0.2s;
+}
+.queue-card button:hover {
+  background: #ff2222;
+  transform: scale(1.05);
+}
+
+.qr-modal {
+  display: none;
+  position: fixed;
+  z-index: 999;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  animation: fadeIn 0.3s ease;
+}
+
+.qr-modal-content {
+  background: #0a1f33;
+  width: 340px;
+  margin: 12% auto;
+  padding: 20px;
+  border-radius: 14px;
+  text-align: center;
+  box-shadow: 0 0 20px #00eaff;
+  color: white;
+  position: relative;
+  animation: popIn 0.4s ease;
+}
+
+#qrVideo {
+  width: 100%;
+  border-radius: 10px;
+  margin-top: 10px;
+}
+
+.close-btn {
+  position: absolute;
+  right: 12px;
+  top: 6px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #00eaff;
+}
+
+@keyframes fadeIn { from {opacity:0} to {opacity:1} }
+@keyframes popIn { from {transform: scale(0.7)} to {transform: scale(1)} }
