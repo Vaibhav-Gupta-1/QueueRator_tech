@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>QueueRator | Admin Dashboard</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(135deg, #001f3f, #0074D9);
+      color: white;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+    #createBtn {
+      display: block;
+      margin: 20px auto;
+      padding: 12px 24px;
+      background: #00eaff;
+      border: none;
+      color: #000;
+      font-weight: bold;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    #createBtn:hover {
+      background: #00c6ff;
+      transform: scale(1.05);
+    }
+    #queueList {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+    }
+    .queue-card {
+      background: rgba(255,255,255,0.1);
+      padding: 20px;
+      border-radius: 15px;
+      width: 220px;
+      text-align: center;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    }
+    .queue-card h3 {
+      margin-bottom: 10px;
+    }
+    .queue-card a {
+      color: #00eaff;
+      text-decoration: none;
+    }
+    .queue-card a:hover {
+      text-decoration: underline;
+    }
+    .queue-card button {
+      margin-top: 6px;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #ff5c5c;
+      color: white;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+    .queue-card button:hover {
+      background: #ff3333;
+    }
+
+    /* --- Admin Stats --- */
+    .stats-section {
+      background: rgba(255,255,255,0.1);
+      margin: 40px auto;
+      padding: 30px;
+      border-radius: 16px;
+      max-width: 900px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+    .stats-grid {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .stat-box {
+      background: rgba(0,0,0,0.3);
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      text-align: center;
+      width: 200px;
+    }
+    .stat-box h3 {
+      color: #00eaff;
+      font-size: 2rem;
+      margin: 0;
+    }
+    .stat-box p {
+      margin: 0;
+      color: #ddd;
+    }
+    .history ul {
+      list-style: none;
+      padding: 0;
+    }
+    .history li {
+      background: rgba(0,0,0,0.4);
+      padding: 8px;
+      border-radius: 8px;
+      margin-bottom: 5px;
+    }
+    canvas {
+      margin: 20px auto;
+      max-width: 600px;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>QueueRator Admin Dashboard</h1>
+
+  <!-- Queue Management -->
+  <button id="createBtn">+ Create New Queue</button>
+  <div id="queueList">
+    {% for qid, qdata in queues.items() %}
+      <div class="queue-card">
+        <h3>{{ qid }}</h3>
+        <img src="/queue/{{ qid }}/qr" width="100" alt="QR Code"><br>
+        <a href="/queue/{{ qid }}" target="_blank">Open Queue</a><br>
+        <a href="/admin/queue/{{ qid }}" style="color:#00ff9d;">⚙ Manage Queue</a><br>
+        <button onclick="deleteQueue('{{ qid }}')">🗑 Delete</button>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- 📊 Stats Dashboard -->
+  <section class="stats-section">
+    <h2 style="text-align:center;">📈 Live Statistics</h2>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <h3 id="activeQueues">0</h3>
+        <p>Active Queues</p>
+      </div>
+      <div class="stat-box">
+        <h3 id="totalWaiting">0</h3>
+        <p>People Waiting</p>
+      </div>
+      <div class="stat-box">
+        <h3 id="servedToday">0</h3>
+        <p>Served Today</p>
+      </div>
+    </div>
+
+    <!-- <canvas id="servedChart" width="400" height="200"></canvas> -->
+
+    <!-- <div class="history">
+      <h3>Recently Served</h3>
+      <ul id="servedList"></ul>
+    </div> -->
+
+    <div class="history">
+  <h3>Recently Served</h3>
+  <div style="margin-bottom:10px;">
+    <button id="clearLastBtn" style="
+      background:#ffcc00;
+      border:none;
+      color:#000;
+      font-weight:bold;
+      border-radius:8px;
+      padding:8px 12px;
+      cursor:pointer;
+      margin-right:5px;
+    ">  Clear Last Entry</button>
+
+    <button id="clearAllBtn" style="
+      background:#ff4444;
+      border:none;
+      color:#fff;
+      font-weight:bold;
+      border-radius:8px;
+      padding:8px 12px;
+      cursor:pointer;
+    ">  Clear All History</button>
+  </div>
+
+  <ul id="servedList"></ul>
+</div>
+
+
+  </section>
+
+  <script>
+    async function createQueue() {
+      const res = await fetch('/create_queue', { method:'POST' });
+      await res.json();
+      updateQueueList();
+    }
+    document.getElementById('createBtn').addEventListener('click', createQueue);
+
+    async function deleteQueue(id) {
+      if (!confirm(`Delete queue ${id}?`)) return;
+      try {
+        const res = await fetch(`/api/queue/${id}/delete`, { method: 'POST' });
+        const data = await res.json();
+        if (data.ok) {
+          alert(data.message);
+          updateQueueList();
+        } else {
+          alert("Delete failed: " + (data.error || "unknown"));
+        }
+      } catch (err) {
+        alert("Network error while deleting queue");
+        console.error(err);
+      }
+    }
+
+    async function updateQueueList() {
+      const res = await fetch('/api/admin/queues');
+      const data = await res.json();
+      const list = document.getElementById('queueList');
+      const servedList = document.getElementById('servedList');
+
+      if (!data.queues.length) {
+        list.innerHTML = `<p style="text-align:center;width:100%;color:#ccc;">No active queues found.</p>`;
+        return;
+      }
+
+      list.innerHTML = data.queues.map(q => `
+        <div class="queue-card">
+          <h3>QUEUE ID</h3>
+          <h3>${q.id}</h3>
+          <p>🕒 Created: ${q.created}</p>
+          <p>👥 Waiting: ${q.waiting}</p>
+          <img src="/queue/${q.id}/qr" width="90" alt="QR Code"><br>
+          <a href="/queue/${q.id}" target="_blank">Open Queue</a><br>
+          <a href="/admin/queue/${q.id}" style="color:#00ff9d;">⚙ Manage Queue</a><br>
+          <button onclick="deleteQueue('${q.id}')">🗑 Delete</button>
+        </div>
+      `).join('');
+
+      if (data.history) {
+        servedList.innerHTML = data.history.map(h => {
+          const event = h.event ? `🗑 ${h.event}` : `✅ Served`;
+          return `<li>${event} — <b>${h.queue}</b> <small>${h.time}</small></li>`;
+        }).join('');
+      }
+    }
+    async function updateStats() {
+  try {
+    const res = await fetch('/api/admin/stats');
+    const data = await res.json();
+    document.getElementById('activeQueues').innerText = data.active_queues;
+    document.getElementById('totalWaiting').innerText = data.total_waiting;
+    document.getElementById('servedToday').innerText = data.served_today;
+
+    const list = document.getElementById('servedList');
+    list.innerHTML = data.history.map(h => 
+      `<li>✅ <b>${h.user}</b> from <b>${h.queue}</b> — ${h.time}</li>`
+    ).join('');
+  } catch (err) {
+    console.error('Error updating stats:', err);
+  }
+}
+
+
+
+document.getElementById('clearLastBtn').addEventListener('click', async () => {
+  const list = document.getElementById('servedList');
+  if (list.children.length === 0) {
+    alert("No recent items to clear.");
+    return;
+  }
+
+  // Optionally ask for confirmation
+  if (!confirm("Erase the most recent deleted/served item?")) return;
+
+  // Remove last item visually
+  const lastItem = list.lastElementChild;
+  const removedText = lastItem.textContent;
+  list.removeChild(lastItem);
+
+  // Optional: notify backend (if endpoint exists)
+  try {
+    const res = await fetch('/api/admin/history/clear_last', { method: 'POST' });
+    const data = await res.json();
+    if (!data.ok) {
+      console.warn("Server did not confirm deletion:", data);
+    }
+  } catch (err) {
+    console.error("Error clearing last item:", err);
+  }
+
+  alert(`Last entry erased:\n${removedText}`);
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', async () => {
+  if (!confirm("⚠️ Are you sure you want to erase ALL recent served/deleted items?")) return;
+
+  try {
+    const res = await fetch('/api/admin/history/clear_all', { method: 'POST' });
+    const data = await res.json();
+
+    if (data.ok) {
+      // Clear list visually
+      document.getElementById('servedList').innerHTML = '';
+      alert(data.message || "All recent items cleared!");
+    } else {
+      alert("Failed to clear history.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Error clearing history!");
+  }
+});
+
+
+    // Auto-refresh
+    updateQueueList();
+    updateStats();
+    setInterval(updateQueueList, 5000);
+    setInterval(updateStats, 5000);
+  </script>
+
+
+
+</body>
+</html>
