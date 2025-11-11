@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QueueRator — Smart Queue System</title>
+
+  <!-- Google Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; }
+    body {
+      min-height: 100vh;
+      background: linear-gradient(-45deg, #001f3f, #0074D9, #00c6ff, #001f3f);
+      background-size: 400% 400%;
+      animation: gradientBG 12s ease infinite;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px;
+    }
+    @keyframes gradientBG {
+      0% {background-position: 0% 50%;}
+      50% {background-position: 100% 50%;}
+      100% {background-position: 0% 50%;}
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 40px 30px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 8px 32px rgba(31,38,135,0.37);
+      border: 1px solid rgba(255,255,255,0.18);
+      animation: cardPop 0.8s ease;
+    }
+    @keyframes cardPop { from {opacity: 0; transform: translateY(40px);} to {opacity: 1; transform: translateY(0);} }
+
+    h1 {
+      font-size: 2.8rem; font-weight: 700; margin-bottom: 10px;
+      background: linear-gradient(90deg,#00eaff,#aaffff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+
+    p.sub { font-size: 1rem; opacity: 0.8; margin-bottom: 20px; }
+
+    .join-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(0,0,0,0.2);
+      padding: 20px;
+      border-radius: 12px;
+      margin: 20px 0;
+    }
+
+    .join-box { width: 45%; }
+
+    .join-box h2 {
+      font-size: 1.2rem;
+      color: #00eaff;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .divider {
+      width: 2px;
+      height: 80px;
+      background: #00eaff;
+      border-radius: 5px;
+      opacity: 0.6;
+    }
+
+    .join-box input {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      outline: none;
+      margin-bottom: 8px;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: #00eaff; border: none; padding: 14px 22px; width: 100%;
+      border-radius: 12px; font-size: 1rem; font-weight: 600; cursor: pointer;
+      transition: 0.3s ease; margin-top: 12px;
+    }
+    .btn:hover { transform: scale(1.05); box-shadow: 0 0 15px #00eaff; }
+    .btn.admin { background: transparent; border: 2px solid #00eaff; color: #00eaff; }
+
+    .about-container {
+      background: rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      border-radius: 16px;
+      padding: 20px;
+      width: 90%;
+      max-width: 500px;
+      margin-top: 22px;
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+      border: 1px solid rgba(255,255,255,0.15);
+      animation: fadeUp 1s ease;
+    }
+    .about-title {
+      font-size: 1.6rem; font-weight: 600; margin-bottom: 8px;
+      background: linear-gradient(90deg,#00eaff,#aaffff);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .about-text { font-size: 0.95rem; opacity: 0.85; line-height: 1.6; }
+
+    @keyframes fadeUp { from {opacity: 0; transform: translateY(15px);} to {opacity: 1; transform: translateY(0);} }
+
+    .qr-modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 10;
+    }
+    .qr-modal-content {
+      background: rgba(255,255,255,0.1); padding: 20px; border-radius: 16px;
+      width: 320px; border: 1px solid rgba(255,255,255,0.2); position: relative;
+    }
+    .close-btn {
+      position: absolute; top: 10px; right: 15px; font-size: 28px;
+      cursor: pointer; color: white;
+    }
+    #qr-reader { width: 100%; }
+
+    footer { margin-top: 16px; opacity: 0.6; font-size: 14px; }
+  </style>
+</head>
+
+<body>
+
+  <div class="glass-card">
+    <h1>QueueRator</h1>
+    <p class="sub">Smarter Line - Lesser Time</p>
+
+    <div class="join-container">
+      <div class="join-box">
+        <h2><i data-lucide="qr-code"></i> Scan QR</h2>
+        <button class="btn" onclick="scanQR()">Open Scanner</button>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="join-box">
+        <h2><i data-lucide="log-in"></i> Join by ID</h2>
+        <input type="text" id="queueID" placeholder="Enter Queue ID">
+        <button class="btn" onclick="joinByID()">Join Queue</button>
+      </div>
+    </div>
+
+    <button class="btn admin" onclick="location.href='/admin'">
+      <i data-lucide="shield"></i> Admin Dashboard
+    </button>
+  </div>
+
+  <!-- ✅ About Us FIXED & CENTERED BELOW CARD -->
+  <div class="about-container">
+    <h2 class="about-title">About Us</h2>
+    <p class="about-text">
+      Create queues instantly, join with a QR code scan, and manage wait times effortlessly.<br>
+      No apps to download, no sign-ups required.
+    </p>
+  </div>
+
+  <!-- QR Scanner Modal -->
+  <div id="qrModal" class="qr-modal">
+    <div class="qr-modal-content">
+      <span class="close-btn" onclick="closeQR()">×</span>
+      <h3>Scan Queue QR</h3>
+      <div id="qr-reader"></div>
+      <p id="qrStatus">Point camera at QR code...</p>
+    </div>
+  </div>
+
+  <footer>© 2025 Developers — QueueRator</footer>
+ 
+  <!-- QR Scanner -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+  let qrScanner;
+  function scanQR() {
+    document.getElementById("qrModal").style.display = "flex";
+
+    if (!qrScanner) {
+      qrScanner = new Html5Qrcode("qr-reader");
+    }
+
+    Html5Qrcode.getCameras().then(devices => {
+      if (devices.length) {
+        qrScanner.start(
+          devices[0].id,
+          { fps: 10, qrbox: 250 },
+          (decodedText) => {
+            document.getElementById("qrStatus").innerText = "✅ Redirecting...";
+            setTimeout(() => { window.location.href = decodedText; }, 1200);
+          }
+        );
+      } else {
+        document.getElementById("qrStatus").innerText = "No Camera Found!";
+      }
+    }).catch(() => {
+      document.getElementById("qrStatus").innerText = "Camera Access Denied!";
+    });
+  }
+
+  function closeQR() {
+    document.getElementById("qrModal").style.display = "none";
+    if (qrScanner) {
+      qrScanner.stop().then(() => {
+        qrScanner.clear();
+      }).catch(err => console.log(err));
+    }
+  }
+
+  function joinByID() {
+    const id = document.getElementById("queueID").value.trim();
+    if (!id) {
+      alert("Please enter a Queue ID!");
+      return;
+    }
+    window.location.href = "/queue/" + id;
+  }
+</script>
+
+<script>lucide.createIcons();</script>
+
+</body>
+</html>
